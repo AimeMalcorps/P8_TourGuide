@@ -13,6 +13,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -94,22 +96,37 @@ public class TourGuideService {
 	}
 
 	public List<nearByAttractionDTO> getNearByAttractions(VisitedLocation visitedLocation) {
-		
+
 		System.out.println(visitedLocation.userId);
-		
+
 		List<nearByAttractionDTO> nearByAttractions = new ArrayList<>();
 
 		for (Attraction attraction : gpsUtil.getAttractions()) {
-		
+
 			nearByAttractions.add(new nearByAttractionDTO(attraction.attractionName, attraction.latitude,
 					attraction.longitude, visitedLocation.location.latitude, visitedLocation.location.longitude,
 					rewardsService.getDistance(visitedLocation.location, attraction),
 					new RewardCentral().getAttractionRewardPoints(attraction.attractionId, visitedLocation.userId)));
 		}
-		
+
 		return nearByAttractions.stream()
-		        .sorted(Comparator.comparingDouble(nearByAttractionDTO::getDistanceUserAttraction))
-		        .limit(5).collect(Collectors.toList());
+				.sorted(Comparator.comparingDouble(nearByAttractionDTO::getDistanceUserAttraction)).limit(5)
+				.collect(Collectors.toList());
+	}
+
+	public JSONObject getAllCurrentLocations(List<User> userList) throws JSONException {
+		
+		JSONObject json = new JSONObject();
+		JSONObject coordonates = new JSONObject();
+
+		for (User user : userList) {
+			VisitedLocation location = user.getLastVisitedLocation();
+			coordonates.put("longitude", location.location.longitude);
+			coordonates.put("latitude", location.location.latitude);
+			json.put(location.userId.toString(), coordonates);
+		}
+		
+		return json;
 	}
 
 	private void addShutDownHook() {
